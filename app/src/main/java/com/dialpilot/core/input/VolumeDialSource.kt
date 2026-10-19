@@ -8,6 +8,7 @@ import android.media.AudioManager
 import android.os.SystemClock
 import android.view.KeyEvent
 import androidx.core.content.ContextCompat
+import com.dialpilot.core.engine.EngineStatus
 import com.dialpilot.core.settings.DialConfig
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -29,6 +30,7 @@ import javax.inject.Inject
 class VolumeDialSource @Inject constructor(
     @ApplicationContext private val context: Context,
     private val audioManager: AudioManager,
+    private val status: EngineStatus,
 ) : DialInputSource {
 
     private var sink: ((Int) -> Unit)? = null
@@ -39,7 +41,9 @@ class VolumeDialSource @Inject constructor(
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.getIntExtra(EXTRA_STREAM_TYPE, -1) != AudioManager.STREAM_MUSIC) return
-            onMusicVolumeChanged(intent.getIntExtra(EXTRA_STREAM_VALUE, -1))
+            val volume = intent.getIntExtra(EXTRA_STREAM_VALUE, -1)
+            reportVolume(volume, counted = true)
+            onMusicVolumeChanged(volume)
         }
     }
 
@@ -53,6 +57,7 @@ class VolumeDialSource @Inject constructor(
             IntentFilter(ACTION_VOLUME_CHANGED),
             ContextCompat.RECEIVER_EXPORTED,
         )
+        reportVolume(currentVolume(), counted = false)
     }
 
     override fun stop() {
@@ -102,6 +107,17 @@ class VolumeDialSource @Inject constructor(
         val pinned = volume.coerceIn(1, (max - 1).coerceAtLeast(1))
         if (pinned != volume) audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, pinned, 0)
         return pinned
+    }
+
+    private fun reportVolume(volume: Int, counted: Boolean) {
+        val max = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+        status.update {
+            it.copy(
+                volumeEvents = if (counted) it.volumeEvents + 1 else it.volumeEvents,
+                musicVolume = volume,
+                musicMaxVolume = max,
+            )
+        }
     }
 
     private fun currentVolume() = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)

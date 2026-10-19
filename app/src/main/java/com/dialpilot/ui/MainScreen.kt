@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dialpilot.R
+import com.dialpilot.core.engine.EngineStatus
 import com.dialpilot.core.settings.DialConfig
 import com.dialpilot.ui.components.ActionPickerDialog
 import com.dialpilot.ui.components.ActionSettingsCard
@@ -179,7 +180,14 @@ private fun StatusCard(state: MainUiState, viewModel: MainViewModel) {
         !state.config.enabled -> stringResource(R.string.status_paused)
         !engine.serviceRunning -> stringResource(R.string.status_waiting_service)
         activeAction != null -> stringResource(R.string.status_capturing, stringResource(activeAction.titleRes))
-        else -> stringResource(R.string.status_passthrough)
+        else -> when (engine.block) {
+            EngineStatus.Block.DISABLED -> stringResource(R.string.block_disabled)
+            EngineStatus.Block.SCREEN_OFF -> stringResource(R.string.block_screen_off)
+            EngineStatus.Block.LOCKED -> stringResource(R.string.block_locked)
+            EngineStatus.Block.NO_HEADSET -> stringResource(R.string.block_no_headset, state.config.headsetNameFilter)
+            EngineStatus.Block.APP_USES_VOLUME -> stringResource(R.string.block_app_uses_volume)
+            null -> stringResource(R.string.status_passthrough)
+        }
     }
     Card(Modifier.fillMaxWidth().padding(16.dp)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -201,6 +209,23 @@ private fun StatusCard(state: MainUiState, viewModel: MainViewModel) {
             engine.lastEvent?.let { event ->
                 val title = viewModel.action(event.actionId)?.let { stringResource(it.titleRes) } ?: event.actionId
                 StatusLine(stringResource(R.string.status_last_event, event.steps, title))
+            }
+            if (engine.musicMaxVolume > 0) {
+                StatusLine(stringResource(R.string.status_volume_diag, engine.musicVolume, engine.musicMaxVolume, engine.volumeEvents))
+                Text(
+                    stringResource(R.string.status_volume_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedButton(onClick = viewModel::testScroll) { Text(stringResource(R.string.test_scroll)) }
+                Text(
+                    stringResource(R.string.test_scroll_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f),
+                )
             }
         }
     }

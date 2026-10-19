@@ -18,6 +18,15 @@
     <string name="status_foreground_app">In: %1$s</string>
     <string name="status_headsets">Connected: %1$s</string>
     <string name="status_no_headset">No Bluetooth headset connected</string>
+    <string name="block_disabled">Dial control is switched off</string>
+    <string name="block_screen_off">Not capturing: screen is off</string>
+    <string name="block_locked">Not capturing: phone is locked</string>
+    <string name="block_no_headset">Not capturing: no headset matching "%1$s" is connected</string>
+    <string name="block_app_uses_volume">Not capturing: this app is set to Volume</string>
+    <string name="status_volume_diag">Media volume %1$d / %2$d · changes seen: %3$d</string>
+    <string name="status_volume_hint">Turn the dial now. If "changes seen" doesn't go up, your buds aren't telling the phone about the turn.</string>
+    <string name="test_scroll">Test scroll</string>
+    <string name="test_scroll_hint">Scrolls the app you switch to once, 3 seconds after you tap.</string>
     <string name="status_last_event">Last turn: %1$+d → %2$s</string>
 
     <!-- Sections -->

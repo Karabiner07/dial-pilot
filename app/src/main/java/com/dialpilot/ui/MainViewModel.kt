@@ -33,7 +33,7 @@ class MainViewModel @Inject constructor(
     private val settings: SettingsRepository,
     private val installedApps: InstalledApps,
     registry: ActionRegistry,
-    engineStatus: EngineStatus,
+    private val engineStatus: EngineStatus,
 ) : AndroidViewModel(application) {
 
     val actions: List<DialAction> = registry.all
@@ -71,6 +71,8 @@ class MainViewModel @Inject constructor(
         if (_apps.value != null) return
         viewModelScope.launch { _apps.value = installedApps.launchable() }
     }
+
+    fun testScroll() = engineStatus.requestTest()
 
     fun setEnabled(value: Boolean) = launch { settings.setEnabled(value) }
     fun setDefaultAction(id: String) = launch { settings.setDefaultAction(id) }
