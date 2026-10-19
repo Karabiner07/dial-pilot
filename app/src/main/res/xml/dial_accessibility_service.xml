@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  typeWindowStateChanged/typeWindowsChanged: track the foreground app for per-app rules.
+  flagRequestFilterKeyEvents: see phone volume keys so they are not mistaken for dial turns.
+  canPerformGestures: inject the scroll / swipe / pinch gestures.
+  canRetrieveWindowContent: find scrollable views for the "page scroll" action.
+-->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityEventTypes="typeWindowStateChanged|typeWindowsChanged"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:accessibilityFlags="flagRequestFilterKeyEvents|flagRetrieveInteractiveWindows"
+    android:canPerformGestures="true"
+    android:canRequestFilterKeyEvents="true"
+    android:canRetrieveWindowContent="true"
+    android:description="@string/accessibility_service_description"
+    android:isAccessibilityTool="false"
+    android:notificationTimeout="100"
+    android:settingsActivity="com.dialpilot.ui.MainActivity" />
