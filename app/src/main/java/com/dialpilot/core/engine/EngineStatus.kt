@@ -35,6 +35,8 @@ class EngineStatus @Inject constructor() {
         val listeningForPresses: Boolean = false,
         /** Media key presses received while claimed. */
         val pressEvents: Int = 0,
+        /** Key code name of the last media key received, for diagnosing what the dial sends. */
+        val lastPressKey: String? = null,
     )
 
     data class DialActivity(val steps: Int, val actionId: String, val atMillis: Long)

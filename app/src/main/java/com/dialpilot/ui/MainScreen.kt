@@ -211,7 +211,7 @@ private fun StatusCard(state: MainUiState, viewModel: MainViewModel) {
                 StatusLine(stringResource(R.string.status_last_event, event.steps, title))
             }
             if (engine.listeningForPresses) {
-                StatusLine(stringResource(R.string.status_presses_diag, engine.pressEvents))
+                StatusLine(stringResource(R.string.status_presses_diag, engine.pressEvents, engine.lastPressKey ?: "–"))
             }
             if (engine.musicMaxVolume > 0) {
                 StatusLine(stringResource(R.string.status_volume_diag, engine.musicVolume, engine.musicMaxVolume, engine.volumeEvents))

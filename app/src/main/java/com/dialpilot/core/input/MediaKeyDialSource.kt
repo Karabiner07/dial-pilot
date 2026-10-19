@@ -28,7 +28,9 @@ import javax.inject.Inject
  * While armed, this source claims that role with its own [MediaSession] and a looping silent
  * [AudioTrack], and re-claims it whenever another app starts playing.
  *
- * Next/fast-forward become +1 step, previous/rewind -1. Play/pause is swallowed while armed.
+ * Next/fast-forward become +1 step, previous/rewind -1. With absolute volume disabled, some buds
+ * send dial rotation as AVRCP volume up/down keys; those arrive here too and become +1 / -1.
+ * Play/pause is swallowed while armed.
  */
 class MediaKeyDialSource @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -117,11 +119,18 @@ class MediaKeyDialSource @Inject constructor(
     private val callback = object : MediaSession.Callback() {
         override fun onMediaButtonEvent(mediaButtonIntent: Intent): Boolean {
             val event = mediaButtonIntent.keyEvent() ?: return false
-            status.update { it.copy(pressEvents = it.pressEvents + if (event.action == KeyEvent.ACTION_DOWN) 1 else 0) }
-            if (event.action != KeyEvent.ACTION_DOWN || event.repeatCount > 0) return true
+            if (event.action != KeyEvent.ACTION_DOWN) return true
+            status.update {
+                it.copy(pressEvents = it.pressEvents + 1, lastPressKey = KeyEvent.keyCodeToString(event.keyCode))
+            }
+            if (event.repeatCount > 0) return true
             when (event.keyCode) {
-                KeyEvent.KEYCODE_MEDIA_NEXT, KeyEvent.KEYCODE_MEDIA_FAST_FORWARD -> sink?.invoke(1)
-                KeyEvent.KEYCODE_MEDIA_PREVIOUS, KeyEvent.KEYCODE_MEDIA_REWIND -> sink?.invoke(-1)
+                KeyEvent.KEYCODE_MEDIA_NEXT,
+                KeyEvent.KEYCODE_MEDIA_FAST_FORWARD,
+                KeyEvent.KEYCODE_VOLUME_UP -> sink?.invoke(1)
+                KeyEvent.KEYCODE_MEDIA_PREVIOUS,
+                KeyEvent.KEYCODE_MEDIA_REWIND,
+                KeyEvent.KEYCODE_VOLUME_DOWN -> sink?.invoke(-1)
             }
             return true
         }
