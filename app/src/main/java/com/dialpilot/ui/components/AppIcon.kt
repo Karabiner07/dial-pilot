@@ -4,8 +4,11 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -20,8 +23,9 @@ import kotlinx.coroutines.withContext
 @Composable
 fun AppIcon(packageName: String, modifier: Modifier = Modifier, size: Dp = 40.dp) {
     val context = LocalContext.current
-    val icon by produceState<ImageBitmap?>(null, packageName) {
-        value = withContext(Dispatchers.IO) {
+    var icon by remember(packageName) { mutableStateOf<ImageBitmap?>(null) }
+    LaunchedEffect(packageName) {
+        icon = withContext(Dispatchers.IO) {
             runCatching {
                 context.packageManager.getApplicationIcon(packageName).toBitmap().asImageBitmap()
             }.getOrNull()
