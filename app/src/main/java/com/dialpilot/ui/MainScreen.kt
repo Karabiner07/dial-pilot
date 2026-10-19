@@ -210,6 +210,9 @@ private fun StatusCard(state: MainUiState, viewModel: MainViewModel) {
                 val title = viewModel.action(event.actionId)?.let { stringResource(it.titleRes) } ?: event.actionId
                 StatusLine(stringResource(R.string.status_last_event, event.steps, title))
             }
+            if (engine.listeningForPresses) {
+                StatusLine(stringResource(R.string.status_presses_diag, engine.pressEvents))
+            }
             if (engine.musicMaxVolume > 0) {
                 StatusLine(stringResource(R.string.status_volume_diag, engine.musicVolume, engine.musicMaxVolume, engine.volumeEvents))
                 Text(
@@ -290,6 +293,12 @@ private fun GeneralSettings(state: MainUiState, viewModel: MainViewModel) {
             title = stringResource(R.string.setting_haptics),
             checked = config.hapticFeedback,
             onCheckedChange = viewModel::setHapticFeedback,
+        )
+        SwitchRow(
+            title = stringResource(R.string.setting_capture_presses),
+            description = stringResource(R.string.setting_capture_presses_desc),
+            checked = config.captureDialPresses,
+            onCheckedChange = viewModel::setCaptureDialPresses,
         )
         SwitchRow(
             title = stringResource(R.string.setting_phone_keys),

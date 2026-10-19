@@ -31,6 +31,10 @@ class EngineStatus @Inject constructor() {
         val volumeEvents: Int = 0,
         val musicVolume: Int = -1,
         val musicMaxVolume: Int = -1,
+        /** True while dial presses (media keys) are being claimed. */
+        val listeningForPresses: Boolean = false,
+        /** Media key presses received while claimed. */
+        val pressEvents: Int = 0,
     )
 
     data class DialActivity(val steps: Int, val actionId: String, val atMillis: Long)

@@ -25,6 +25,9 @@
     <string name="block_app_uses_volume">Not capturing: this app is set to Volume</string>
     <string name="status_volume_diag">Media volume %1$d / %2$d · changes seen: %3$d</string>
     <string name="status_volume_hint">Turn the dial now. If \"changes seen\" doesn\'t go up, your buds aren\'t telling the phone about the turn.</string>
+    <string name="status_presses_diag">Listening for dial presses · presses seen: %1$d</string>
+    <string name="setting_capture_presses">Use dial presses</string>
+    <string name="setting_capture_presses_desc">Set double-click to \"Skip forward\" and triple-click to \"Skip back\" in Nothing X. While the dial is captured, they step forward and back instead of skipping tracks, and play/pause presses are ignored.</string>
     <string name="test_scroll">Test scroll</string>
     <string name="test_scroll_hint">Scrolls the app you switch to once, 3 seconds after you tap.</string>
     <string name="status_last_event">Last turn: %1$+d → %2$s</string>
@@ -56,7 +59,7 @@
     <string name="setting_headset_filter">Headset name contains</string>
     <string name="setting_headset_use">Tap a connected device to use its name:</string>
 
-    <string name="how_it_works_body">1. In the Nothing X app, open your CMF Buds Pro 2 → Smart Dial and set rotation to \"Volume\".\n2. Turn on the Dial Pilot accessibility service above.\n3. Open any app and turn the dial. Dial Pilot reads each volume step, sets the volume back, and runs the action you picked.\n\nThe dial is left as a volume control while the screen is off or locked, while your buds are disconnected, in apps set to \"Volume\", and when the master switch or Quick Settings tile is off.\n\nAndroid may briefly show the volume slider on each turn. Bluetooth volume steps don\'t always line up with phone steps, so some turns can need two clicks.</string>
+    <string name="how_it_works_body">1. In the Nothing X app, open your CMF Buds Pro 2 → Smart Dial. Set rotation to \"Volume\", double-click to \"Skip forward\" and triple-click to \"Skip back\". On some phones the buds keep dial rotation to themselves (\"changes seen\" above stays the same when you turn it); presses still work there.\n2. Turn on the Dial Pilot accessibility service above.\n3. Open any app and turn the dial. Dial Pilot reads each volume step, sets the volume back, and runs the action you picked.\n\nThe dial is left as a volume control while the screen is off or locked, while your buds are disconnected, in apps set to \"Volume\", and when the master switch or Quick Settings tile is off.\n\nAndroid may briefly show the volume slider on each turn. Bluetooth volume steps don\'t always line up with phone steps, so some turns can need two clicks.</string>
 
     <!-- Actions -->
     <string name="action_scroll_vertical">Scroll up / down</string>

@@ -138,6 +138,19 @@ action like "back"), add a method to `ActionContext` and implement it in `Servic
 New **input sources** work the same way: implement `DialInputSource` and bind it in
 `di/InputModule.kt`.
 
+## When the phone never sees dial rotation
+
+On some phones (seen on a Xiaomi HyperOS device) the CMF buds apply dial rotation to their own
+volume and never report it, even with absolute volume toggled. The status card's
+"changes seen" counter shows this: it stays the same while you turn the dial. No app can read
+rotation in that case.
+
+Dial **presses** still reach the phone. In Nothing X, set double-click to *Skip forward* and
+triple-click to *Skip back*. While the dial is captured, `MediaKeyDialSource` claims the media
+keys (a `MediaSession` plus a looping silent `AudioTrack`, re-claimed whenever another app starts
+playing), so those presses become +1 / -1 steps: next or previous reel, scroll down or up.
+Switch this off with **Use dial presses**.
+
 ## Limitations
 
 - **The dial must be set to Volume in Nothing X.** Dial presses (play/pause, ANC) go straight to the

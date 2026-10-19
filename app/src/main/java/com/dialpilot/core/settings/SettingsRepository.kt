@@ -38,6 +38,8 @@ class SettingsRepository @Inject constructor(
 
     suspend fun setHapticFeedback(value: Boolean) = edit { it[Keys.HAPTICS] = value }
 
+    suspend fun setCaptureDialPresses(value: Boolean) = edit { it[Keys.CAPTURE_PRESSES] = value }
+
     suspend fun setAppRule(packageName: String, actionId: String) = edit {
         it[Keys.APP_RULES] = encodeRules(readRules(it) + (packageName to actionId))
     }
@@ -69,6 +71,7 @@ class SettingsRepository @Inject constructor(
         requireHeadset = prefs[Keys.REQUIRE_HEADSET] ?: DEFAULTS.requireHeadset,
         headsetNameFilter = prefs[Keys.HEADSET_FILTER] ?: DEFAULTS.headsetNameFilter,
         hapticFeedback = prefs[Keys.HAPTICS] ?: DEFAULTS.hapticFeedback,
+        captureDialPresses = prefs[Keys.CAPTURE_PRESSES] ?: DEFAULTS.captureDialPresses,
         actionValues = readActionValues(prefs),
     )
 
@@ -107,6 +110,7 @@ class SettingsRepository @Inject constructor(
         val REQUIRE_HEADSET = booleanPreferencesKey("require_headset")
         val HEADSET_FILTER = stringPreferencesKey("headset_name_filter")
         val HAPTICS = booleanPreferencesKey("haptic_feedback")
+        val CAPTURE_PRESSES = booleanPreferencesKey("capture_dial_presses")
     }
 
     private companion object {

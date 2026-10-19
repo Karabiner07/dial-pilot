@@ -81,6 +81,7 @@ class MainViewModel @Inject constructor(
     fun setInvertDirection(value: Boolean) = launch { settings.setInvertDirection(value) }
     fun setPhoneKeysAsDial(value: Boolean) = launch { settings.setPhoneKeysAsDial(value) }
     fun setHapticFeedback(value: Boolean) = launch { settings.setHapticFeedback(value) }
+    fun setCaptureDialPresses(value: Boolean) = launch { settings.setCaptureDialPresses(value) }
     fun setRequireHeadset(value: Boolean) = launch { settings.setRequireHeadset(value) }
     fun setHeadsetNameFilter(value: String) = launch { settings.setHeadsetNameFilter(value) }
     fun setActionValue(actionId: String, key: String, value: Any) =

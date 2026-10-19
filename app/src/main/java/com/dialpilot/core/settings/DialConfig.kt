@@ -18,6 +18,11 @@ data class DialConfig(
     /** Case-insensitive substring of the headset's Bluetooth name. */
     val headsetNameFilter: String = "CMF",
     val hapticFeedback: Boolean = true,
+    /**
+     * Claim media keys while the dial is captured, so dial presses set to "Skip forward" /
+     * "Skip back" in Nothing X act as forward / back steps.
+     */
+    val captureDialPresses: Boolean = true,
     /** Stored values per action id, then per setting key. */
     val actionValues: Map<String, Map<String, Any>> = emptyMap(),
 ) {
