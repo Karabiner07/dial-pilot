@@ -17,10 +17,10 @@ class ActionRegistryTest {
     fun `known actions come first in display order, unknown ones after`() {
         val custom = FakeAction("custom_feature")
         val registry = ActionRegistry(
-            setOf(FakeAction(ActionIds.VOLUME), custom, FakeAction(ActionIds.SCROLL_VERTICAL)),
+            setOf(FakeAction(ActionIds.PASS_THROUGH), custom, FakeAction(ActionIds.SCROLL_VERTICAL)),
         )
         assertEquals(
-            listOf(ActionIds.SCROLL_VERTICAL, ActionIds.VOLUME, "custom_feature"),
+            listOf(ActionIds.SCROLL_VERTICAL, ActionIds.PASS_THROUGH, "custom_feature"),
             registry.all.map { it.id },
         )
         assertSame(custom, registry["custom_feature"])

@@ -14,7 +14,6 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.view.KeyEvent
-import com.dialpilot.core.engine.EngineStatus
 import com.dialpilot.core.settings.DialConfig
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -22,23 +21,21 @@ import javax.inject.Inject
 /**
  * Reads Smart Dial *presses* set to "Skip forward" / "Skip back" in the Nothing X app.
  *
- * Some phones never learn about dial rotation: the buds apply it to their own volume. Presses
- * mapped to skip, however, reach the phone as AVRCP media keys, which Android hands to the
+ * Presses mapped to skip reach the phone as AVRCP media keys, which Android hands to the
  * "media button session": the session of the app that most recently started playing audio.
  * While armed, this source claims that role with its own [MediaSession] and a looping silent
  * [AudioTrack], and re-claims it whenever another app starts playing.
  *
- * Next/fast-forward become +1 step, previous/rewind -1. With absolute volume disabled, some buds
- * send dial rotation as AVRCP volume up/down keys; those arrive here too and become +1 / -1.
- * Play/pause is swallowed while armed.
+ * Next / fast-forward become +1 step, previous / rewind -1. Other keys (play/pause) are swallowed
+ * while armed, since there is no way to hand them on to the app that would normally get them.
  */
 class MediaKeyDialSource @Inject constructor(
     @ApplicationContext private val context: Context,
     private val audioManager: AudioManager,
-    private val status: EngineStatus,
 ) : DialInputSource {
 
     private val mainHandler = Handler(Looper.getMainLooper())
+    private val claimRunnable = Runnable(::claim)
     private var sink: ((Int) -> Unit)? = null
     private var session: MediaSession? = null
     private var silence: AudioTrack? = null
@@ -47,8 +44,27 @@ class MediaKeyDialSource @Inject constructor(
     private val playbackCallback = object : AudioManager.AudioPlaybackCallback() {
         override fun onPlaybackConfigChanged(configs: MutableList<AudioPlaybackConfiguration>) {
             // Another app started playing and may now receive the media keys. Our own re-claim
-            // also lands here, so ignore changes right after claiming.
+            // lands here too, so ignore changes right after claiming.
             if (SystemClock.uptimeMillis() - lastClaimAt > RECLAIM_DEBOUNCE_MS) reclaim()
+        }
+    }
+
+    private val sessionCallback = object : MediaSession.Callback() {
+        override fun onMediaButtonEvent(mediaButtonIntent: Intent): Boolean {
+            val event = mediaButtonIntent.keyEvent() ?: return false
+            if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
+                stepFor(event.keyCode)?.let { sink?.invoke(it) }
+            }
+            return true
+        }
+
+        // Some Bluetooth stacks call the transport controls directly instead of sending keys.
+        override fun onSkipToNext() {
+            sink?.invoke(1)
+        }
+
+        override fun onSkipToPrevious() {
+            sink?.invoke(-1)
         }
     }
 
@@ -71,7 +87,7 @@ class MediaKeyDialSource @Inject constructor(
 
     private fun acquire() {
         session = MediaSession(context, TAG).apply {
-            setCallback(callback, mainHandler)
+            setCallback(sessionCallback, mainHandler)
             setPlaybackState(
                 PlaybackState.Builder()
                     .setActions(HANDLED_ACTIONS)
@@ -83,12 +99,11 @@ class MediaKeyDialSource @Inject constructor(
         silence = createSilentTrack()
         audioManager.registerAudioPlaybackCallback(playbackCallback, mainHandler)
         claim()
-        status.update { it.copy(listeningForPresses = true) }
     }
 
     private fun release() {
         audioManager.unregisterAudioPlaybackCallback(playbackCallback)
-        mainHandler.removeCallbacksAndMessages(null)
+        mainHandler.removeCallbacks(claimRunnable)
         silence?.run {
             runCatching { stop() }
             release()
@@ -96,7 +111,6 @@ class MediaKeyDialSource @Inject constructor(
         silence = null
         session?.release()
         session = null
-        status.update { it.copy(listeningForPresses = false) }
     }
 
     /** Starts the silent track so this app is the most recent audio player. */
@@ -113,41 +127,12 @@ class MediaKeyDialSource @Inject constructor(
         val track = silence ?: return
         lastClaimAt = SystemClock.uptimeMillis()
         track.pause()
-        mainHandler.postDelayed(::claim, RECLAIM_GAP_MS)
-    }
-
-    private val callback = object : MediaSession.Callback() {
-        override fun onMediaButtonEvent(mediaButtonIntent: Intent): Boolean {
-            val event = mediaButtonIntent.keyEvent() ?: return false
-            if (event.action != KeyEvent.ACTION_DOWN) return true
-            status.update {
-                it.copy(pressEvents = it.pressEvents + 1, lastPressKey = KeyEvent.keyCodeToString(event.keyCode))
-            }
-            if (event.repeatCount > 0) return true
-            when (event.keyCode) {
-                KeyEvent.KEYCODE_MEDIA_NEXT,
-                KeyEvent.KEYCODE_MEDIA_FAST_FORWARD,
-                KeyEvent.KEYCODE_VOLUME_UP -> sink?.invoke(1)
-                KeyEvent.KEYCODE_MEDIA_PREVIOUS,
-                KeyEvent.KEYCODE_MEDIA_REWIND,
-                KeyEvent.KEYCODE_VOLUME_DOWN -> sink?.invoke(-1)
-            }
-            return true
-        }
-
-        // Some stacks call the transport callbacks directly instead of onMediaButtonEvent.
-        override fun onSkipToNext() {
-            sink?.invoke(1)
-        }
-
-        override fun onSkipToPrevious() {
-            sink?.invoke(-1)
-        }
+        mainHandler.postDelayed(claimRunnable, RECLAIM_GAP_MS)
     }
 
     private fun createSilentTrack(): AudioTrack {
         val frames = SAMPLE_RATE / 2
-        val track = AudioTrack.Builder()
+        return AudioTrack.Builder()
             .setAudioAttributes(
                 AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_MEDIA)
@@ -164,18 +149,11 @@ class MediaKeyDialSource @Inject constructor(
             .setTransferMode(AudioTrack.MODE_STATIC)
             .setBufferSizeInBytes(frames * BYTES_PER_FRAME)
             .build()
-        track.write(ShortArray(frames), 0, frames)
-        track.setLoopPoints(0, frames, -1)
-        return track
+            .apply {
+                write(ShortArray(frames), 0, frames)
+                setLoopPoints(0, frames, -1)
+            }
     }
-
-    private fun Intent.keyEvent(): KeyEvent? =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            getParcelableExtra(Intent.EXTRA_KEY_EVENT, KeyEvent::class.java)
-        } else {
-            @Suppress("DEPRECATION")
-            getParcelableExtra(Intent.EXTRA_KEY_EVENT)
-        }
 
     private companion object {
         const val TAG = "DialPilotPresses"
@@ -186,5 +164,19 @@ class MediaKeyDialSource @Inject constructor(
         const val HANDLED_ACTIONS = PlaybackState.ACTION_PLAY or PlaybackState.ACTION_PAUSE or
             PlaybackState.ACTION_PLAY_PAUSE or PlaybackState.ACTION_SKIP_TO_NEXT or
             PlaybackState.ACTION_SKIP_TO_PREVIOUS
+
+        fun stepFor(keyCode: Int): Int? = when (keyCode) {
+            KeyEvent.KEYCODE_MEDIA_NEXT, KeyEvent.KEYCODE_MEDIA_FAST_FORWARD -> 1
+            KeyEvent.KEYCODE_MEDIA_PREVIOUS, KeyEvent.KEYCODE_MEDIA_REWIND -> -1
+            else -> null
+        }
+
+        fun Intent.keyEvent(): KeyEvent? =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                getParcelableExtra(Intent.EXTRA_KEY_EVENT, KeyEvent::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                getParcelableExtra(Intent.EXTRA_KEY_EVENT)
+            }
     }
 }

@@ -22,33 +22,35 @@ class SettingsRepository @Inject constructor(
         .map(::toConfig)
         .distinctUntilChanged()
 
-    suspend fun setEnabled(value: Boolean) = edit { it[Keys.ENABLED] = value }
+    suspend fun setEnabled(value: Boolean) = update { it[Keys.ENABLED] = value }
 
-    suspend fun toggleEnabled() = edit { it[Keys.ENABLED] = !(it[Keys.ENABLED] ?: DEFAULTS.enabled) }
+    suspend fun toggleEnabled() = update { it[Keys.ENABLED] = !(it[Keys.ENABLED] ?: DEFAULTS.enabled) }
 
-    suspend fun setDefaultAction(actionId: String) = edit { it[Keys.DEFAULT_ACTION] = actionId }
+    suspend fun setDefaultAction(actionId: String) = update { it[Keys.DEFAULT_ACTION] = actionId }
 
-    suspend fun setInvertDirection(value: Boolean) = edit { it[Keys.INVERT] = value }
+    suspend fun setInvertDirection(value: Boolean) = update { it[Keys.INVERT] = value }
 
-    suspend fun setPhoneKeysAsDial(value: Boolean) = edit { it[Keys.PHONE_KEYS] = value }
+    suspend fun setPhoneKeysAsDial(value: Boolean) = update { it[Keys.PHONE_KEYS] = value }
 
-    suspend fun setRequireHeadset(value: Boolean) = edit { it[Keys.REQUIRE_HEADSET] = value }
+    suspend fun setRequireHeadset(value: Boolean) = update { it[Keys.REQUIRE_HEADSET] = value }
 
-    suspend fun setHeadsetNameFilter(value: String) = edit { it[Keys.HEADSET_FILTER] = value.trim() }
+    suspend fun setHeadsetNameFilter(value: String) = update { it[Keys.HEADSET_FILTER] = value.trim() }
 
-    suspend fun setHapticFeedback(value: Boolean) = edit { it[Keys.HAPTICS] = value }
+    suspend fun setHapticFeedback(value: Boolean) = update { it[Keys.HAPTICS] = value }
 
-    suspend fun setCaptureDialPresses(value: Boolean) = edit { it[Keys.CAPTURE_PRESSES] = value }
+    suspend fun setCaptureDialPresses(value: Boolean) = update { it[Keys.CAPTURE_PRESSES] = value }
 
-    suspend fun setAppRule(packageName: String, actionId: String) = edit {
+    suspend fun setUseDialRotation(value: Boolean) = update { it[Keys.USE_ROTATION] = value }
+
+    suspend fun setAppRule(packageName: String, actionId: String) = update {
         it[Keys.APP_RULES] = encodeRules(readRules(it) + (packageName to actionId))
     }
 
-    suspend fun removeAppRule(packageName: String) = edit {
+    suspend fun removeAppRule(packageName: String) = update {
         it[Keys.APP_RULES] = encodeRules(readRules(it) - packageName)
     }
 
-    suspend fun setActionValue(actionId: String, key: String, value: Any) = edit {
+    suspend fun setActionValue(actionId: String, key: String, value: Any) = update {
         val name = actionKeyName(actionId, key)
         when (value) {
             is Int -> it[intPreferencesKey(name)] = value
@@ -58,8 +60,8 @@ class SettingsRepository @Inject constructor(
         }
     }
 
-    private suspend fun edit(block: (MutablePreferences) -> Unit) {
-        dataStore.edit(block)
+    private suspend fun update(transform: (MutablePreferences) -> Unit) {
+        dataStore.edit(transform)
     }
 
     private fun toConfig(prefs: Preferences) = DialConfig(
@@ -72,6 +74,7 @@ class SettingsRepository @Inject constructor(
         headsetNameFilter = prefs[Keys.HEADSET_FILTER] ?: DEFAULTS.headsetNameFilter,
         hapticFeedback = prefs[Keys.HAPTICS] ?: DEFAULTS.hapticFeedback,
         captureDialPresses = prefs[Keys.CAPTURE_PRESSES] ?: DEFAULTS.captureDialPresses,
+        useDialRotation = prefs[Keys.USE_ROTATION] ?: DEFAULTS.useDialRotation,
         actionValues = readActionValues(prefs),
     )
 
@@ -111,6 +114,7 @@ class SettingsRepository @Inject constructor(
         val HEADSET_FILTER = stringPreferencesKey("headset_name_filter")
         val HAPTICS = booleanPreferencesKey("haptic_feedback")
         val CAPTURE_PRESSES = booleanPreferencesKey("capture_dial_presses")
+        val USE_ROTATION = booleanPreferencesKey("use_dial_rotation")
     }
 
     private companion object {

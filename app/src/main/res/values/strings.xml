@@ -3,7 +3,7 @@
     <string name="app_name">Dial Pilot</string>
     <string name="tile_label">Dial scroll</string>
     <string name="accessibility_service_label">Dial Pilot</string>
-    <string name="accessibility_service_description">Turns the Smart Dial on your CMF Buds Pro 2 case into a scroll wheel. It watches media volume changes made by the dial, puts the volume back, and performs the action you chose (scroll, swipe to next reel, zoom, …) as a touch gesture. It reads which app is in front to apply per-app rules and checks your phone\'s volume keys so they are not mistaken for the dial. No data leaves your phone.</string>
+    <string name="accessibility_service_description">Lets the Smart Dial on your CMF Buds Pro 2 case scroll the screen. Dial presses set to Skip forward / Skip back in Nothing X are turned into the action you choose (next reel, scroll, zoom, …), performed as a touch gesture. The service reads which app is in front to apply per-app rules and, if you turn on rotation, watches your phone\'s volume keys so they are not mistaken for the dial. No data leaves your phone.</string>
 
     <!-- Status -->
     <string name="service_off_title">Accessibility service is off</string>
@@ -12,25 +12,17 @@
     <string name="open_app_info">App info</string>
     <string name="master_switch">Dial control</string>
     <string name="status_capturing">Dial → %1$s</string>
-    <string name="status_passthrough">Dial controls volume</string>
-    <string name="status_paused">Paused. The dial controls volume.</string>
+    <string name="status_passthrough">The dial works as usual</string>
     <string name="status_waiting_service">Starting service…</string>
-    <string name="status_foreground_app">In: %1$s</string>
-    <string name="status_headsets">Connected: %1$s</string>
-    <string name="status_no_headset">No Bluetooth headset connected</string>
-    <string name="block_disabled">Dial control is switched off</string>
+    <string name="block_disabled">Paused. The dial works as usual.</string>
     <string name="block_screen_off">Not capturing: screen is off</string>
     <string name="block_locked">Not capturing: phone is locked</string>
     <string name="block_no_headset">Not capturing: no headset matching \"%1$s\" is connected</string>
-    <string name="block_app_uses_volume">Not capturing: this app is set to Volume</string>
-    <string name="status_volume_diag">Media volume %1$d / %2$d · changes seen: %3$d</string>
-    <string name="status_volume_hint">Turn the dial now. If \"changes seen\" doesn\'t go up, your buds aren\'t telling the phone about the turn.</string>
-    <string name="status_presses_diag">Listening for dial presses · presses seen: %1$d · last: %2$s</string>
-    <string name="setting_capture_presses">Use dial presses</string>
-    <string name="setting_capture_presses_desc">Set double-click to \"Skip forward\" and triple-click to \"Skip back\" in Nothing X. While the dial is captured, they step forward and back instead of skipping tracks, and play/pause presses are ignored.</string>
-    <string name="test_scroll">Test scroll</string>
-    <string name="test_scroll_hint">Scrolls the app you switch to once, 3 seconds after you tap.</string>
-    <string name="status_last_event">Last turn: %1$+d → %2$s</string>
+    <string name="block_app_passes_through">Not capturing: this app is set to Don\'t capture</string>
+    <string name="status_foreground_app">In: %1$s</string>
+    <string name="status_headsets">Connected: %1$s</string>
+    <string name="status_no_headset">No Bluetooth headset connected</string>
+    <string name="status_last_event">Last input: %1$+d → %2$s</string>
 
     <!-- Sections -->
     <string name="section_default_action">Default action</string>
@@ -50,16 +42,20 @@
 
     <!-- General settings -->
     <string name="setting_invert">Reverse direction</string>
-    <string name="setting_invert_desc">Turn the other way to scroll forward.</string>
+    <string name="setting_invert_desc">Swap forward and back.</string>
+    <string name="setting_capture_presses">Use dial presses</string>
+    <string name="setting_capture_presses_desc">Presses set to Skip forward / Skip back in Nothing X step forward and back. While the dial is captured, play/pause presses are ignored.</string>
+    <string name="setting_use_rotation">Use dial rotation (if supported)</string>
+    <string name="setting_use_rotation_desc">Only works if your phone\'s volume slider moves when you turn the dial. Holds the media volume steady while the dial is captured.</string>
     <string name="setting_phone_keys">Phone volume keys scroll too</string>
-    <string name="setting_phone_keys_desc">While the dial is captured, the phone\'s volume keys act like the dial.</string>
-    <string name="setting_haptics">Vibrate on each turn</string>
+    <string name="setting_phone_keys_desc">While the dial is captured, the phone\'s volume keys act like dial rotation.</string>
+    <string name="setting_haptics">Vibrate on each input</string>
     <string name="setting_require_headset">Only with my buds connected</string>
-    <string name="setting_require_headset_desc">Otherwise the volume keys and speaker volume are captured too.</string>
+    <string name="setting_require_headset_desc">Otherwise media keys are captured whenever the screen is on.</string>
     <string name="setting_headset_filter">Headset name contains</string>
     <string name="setting_headset_use">Tap a connected device to use its name:</string>
 
-    <string name="how_it_works_body">1. In the Nothing X app, open your CMF Buds Pro 2 → Smart Dial. Set rotation to \"Volume\", double-click to \"Skip forward\" and triple-click to \"Skip back\". On some phones the buds keep dial rotation to themselves (\"changes seen\" above stays the same when you turn it); presses still work there.\n2. Turn on the Dial Pilot accessibility service above.\n3. Open any app and turn the dial. Dial Pilot reads each volume step, sets the volume back, and runs the action you picked.\n\nThe dial is left as a volume control while the screen is off or locked, while your buds are disconnected, in apps set to \"Volume\", and when the master switch or Quick Settings tile is off.\n\nAndroid may briefly show the volume slider on each turn. Bluetooth volume steps don\'t always line up with phone steps, so some turns can need two clicks.</string>
+    <string name="how_it_works_body">1. In the Nothing X app, open CMF Buds Pro 2 → Smart Dial. Set double-click to \"Skip forward\" and triple-click to \"Skip back\".\n2. Turn on the Dial Pilot accessibility service above.\n3. Open any app and double- or triple-click the dial. Dial Pilot catches the skip and runs the action you picked for that app instead.\n\nThe dial works as usual while the screen is off or locked, while your buds are disconnected, in apps set to \"Don\'t capture\", and when the master switch or Quick Settings tile is off.\n\nDial rotation: many phones never learn about it, because the buds change their own volume. If your phone\'s volume slider moves when you turn the dial, turn on \"Use dial rotation\" below.</string>
 
     <!-- Actions -->
     <string name="action_scroll_vertical">Scroll up / down</string>
@@ -67,23 +63,23 @@
     <string name="action_scroll_horizontal">Scroll left / right</string>
     <string name="action_scroll_horizontal_desc">Sideways scrolling for carousels, timelines and horizontal PDFs.</string>
     <string name="action_swipe_items">Next / previous item</string>
-    <string name="action_swipe_items_desc">One click jumps one item: Reels, Shorts, TikTok, stories, photos.</string>
+    <string name="action_swipe_items_desc">Jumps one item at a time: Reels, Shorts, TikTok, stories, photos.</string>
     <string name="action_page_scroll">Page by page</string>
     <string name="action_page_scroll_desc">Asks the app to scroll exactly one page. Works in Chrome and most lists, not in apps that draw their own content.</string>
     <string name="action_zoom">Zoom</string>
     <string name="action_zoom_desc">Pinch in and out at the centre of the screen. For PDFs, maps and photos.</string>
     <string name="action_media_tracks">Next / previous track</string>
     <string name="action_media_tracks_desc">Skips tracks in whatever is playing.</string>
-    <string name="action_volume">Volume (don\'t capture)</string>
-    <string name="action_volume_desc">The dial keeps controlling volume.</string>
+    <string name="action_pass_through">Don\'t capture</string>
+    <string name="action_pass_through_desc">The dial keeps its normal Nothing X behaviour in this app.</string>
 
     <!-- Action settings -->
-    <string name="setting_scroll_distance">Distance per click</string>
+    <string name="setting_scroll_distance">Distance per step</string>
     <string name="setting_scroll_duration">Swipe duration</string>
     <string name="setting_scroll_precise">Stop exactly (no fling)</string>
     <string name="setting_axis">Direction</string>
     <string name="axis_vertical">Vertical</string>
     <string name="axis_horizontal">Horizontal</string>
     <string name="setting_cooldown">Minimum time between jumps</string>
-    <string name="setting_zoom_strength">Zoom per click</string>
+    <string name="setting_zoom_strength">Zoom per step</string>
 </resources>

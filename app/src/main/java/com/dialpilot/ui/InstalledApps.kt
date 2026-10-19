@@ -25,7 +25,9 @@ class InstalledApps @Inject constructor(
             .sortedBy { it.label.lowercase() }
     }
 
-    fun label(packageName: String): String = runCatching {
-        packageManager.getApplicationLabel(packageManager.getApplicationInfo(packageName, 0)).toString()
-    }.getOrDefault(packageName)
+    suspend fun label(packageName: String): String = withContext(Dispatchers.IO) {
+        runCatching {
+            packageManager.getApplicationLabel(packageManager.getApplicationInfo(packageName, 0)).toString()
+        }.getOrDefault(packageName)
+    }
 }

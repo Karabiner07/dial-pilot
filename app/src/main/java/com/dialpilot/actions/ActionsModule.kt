@@ -34,5 +34,5 @@ abstract class ActionsModule {
     abstract fun mediaTracks(action: MediaTracksAction): DialAction
 
     @Binds @IntoSet @Singleton
-    abstract fun volume(action: VolumeAction): DialAction
+    abstract fun passThrough(action: PassThroughAction): DialAction
 }

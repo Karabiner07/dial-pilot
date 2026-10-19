@@ -17,14 +17,14 @@ android {
         // API 26 is the floor for continued gesture strokes (precise scrolling without fling).
         minSdk = 26
         targetSdk = 35
-        versionCode = 4
-        versionName = "1.2.1"
+        versionCode = 5
+        versionName = "1.3.0"
     }
 
     signingConfigs {
-        // Committed debug key, so every CI build is signed the same way and installs as an
-        // update instead of requiring an uninstall. Not for Play Store distribution.
-        getByName("debug") {
+        // A committed, non-secret key used for sideloading: every CI build is signed the same
+        // way, so new versions install as updates. Use a private key for store distribution.
+        create("sideload") {
             storeFile = file("debug.keystore")
             storePassword = "android"
             keyAlias = "androiddebugkey"
@@ -33,13 +33,14 @@ android {
     }
 
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("sideload")
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            // Signed with the debug key so a release build can be sideloaded directly.
-            // Replace with your own signing config before distributing.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("sideload")
         }
     }
 
@@ -50,6 +51,15 @@ android {
 
     buildFeatures {
         compose = true
+    }
+
+    packaging {
+        resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
+    }
+
+    lint {
+        abortOnError = true
+        checkDependencies = false
     }
 }
 

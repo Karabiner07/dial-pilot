@@ -3,7 +3,6 @@ package com.dialpilot.core.engine
 import android.util.Log
 import android.view.KeyEvent
 import com.dialpilot.core.action.ActionContext
-import com.dialpilot.core.action.ActionIds
 import com.dialpilot.core.action.ActionRegistry
 import com.dialpilot.core.action.ActionSettingsValues
 import com.dialpilot.core.action.DialAction
@@ -15,7 +14,6 @@ import com.dialpilot.core.settings.SettingsRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -29,7 +27,7 @@ import javax.inject.Inject
 
 /**
  * Decides, at every moment, whether the dial is captured and by which action, and runs that
- * action for incoming rotation steps.
+ * action for incoming steps.
  *
  * Owned by [com.dialpilot.service.DialAccessibilityService]; one instance per service connection.
  */
@@ -56,17 +54,18 @@ class DialEngine @Inject constructor(
         val config: StateFlow<DialConfig?> = settings.config.stateIn(scope, SharingStarted.Eagerly, null)
         val headsets = headsetMonitor.connectedHeadsets.stateIn(scope, SharingStarted.Eagerly, emptyList())
 
-        val resolution: StateFlow<Resolution> = combine(
+        val capture: StateFlow<CaptureRules.Result> = combine(
             config.filterNotNull(),
             foregroundPackage,
             headsets,
             screenMonitor.state,
-            ::resolve,
-        ).stateIn(scope, SharingStarted.Eagerly, Resolution(null, null))
+        ) { cfg, packageName, names, screen ->
+            CaptureRules.resolve(cfg, packageName, names, screen, registry::get)
+        }.stateIn(scope, SharingStarted.Eagerly, CaptureRules.Result(action = null, block = null))
 
-        combine(resolution, config.filterNotNull()) { res, cfg ->
-            inputSources.forEach { it.setArmed(res.action != null, cfg) }
-            status.update { it.copy(activeActionId = res.action?.id, block = res.block) }
+        combine(capture, config.filterNotNull()) { result, cfg ->
+            inputSources.forEach { it.setArmed(result.action != null, cfg) }
+            status.update { it.copy(activeActionId = result.action?.id, block = result.block) }
         }.launchIn(scope)
 
         headsets
@@ -74,23 +73,12 @@ class DialEngine @Inject constructor(
             .launchIn(scope)
 
         scope.launch {
-            status.testRequests.collect {
-                delay(TEST_DELAY_MS)
-                val cfg = config.value ?: return@collect
-                val action = registry[cfg.defaultActionId]?.takeIf { it.interceptsDial }
-                    ?: registry[ActionIds.SCROLL_VERTICAL]
-                    ?: return@collect
-                run(action, 1, cfg, contextFactory)
-            }
-        }
-
-        scope.launch {
             for (first in steps) {
-                // Coalesce detents that arrived while the previous action was still running.
+                // Coalesce steps that arrived while the previous action was still running.
                 var total = first
                 while (true) total += steps.tryReceive().getOrNull() ?: break
 
-                val action = resolution.value.action ?: continue
+                val action = capture.value.action ?: continue
                 val cfg = config.value ?: continue
                 val signed = if (cfg.invertDirection) -total else total
                 if (signed != 0) run(action, signed, cfg, contextFactory)
@@ -104,8 +92,11 @@ class DialEngine @Inject constructor(
     }
 
     fun onForegroundAppChanged(packageName: String) {
-        foregroundPackage.value = packageName
+        // Re-read lock state on every window change: some OEM builds (e.g. HyperOS) do not
+        // reliably deliver unlock broadcasts.
         screenMonitor.refresh()
+        if (foregroundPackage.value == packageName) return
+        foregroundPackage.value = packageName
         status.update { it.copy(foregroundPackage = packageName) }
     }
 
@@ -121,9 +112,7 @@ class DialEngine @Inject constructor(
         contextFactory: (ActionSettingsValues) -> ActionContext,
     ) {
         if (config.hapticFeedback) haptics.tick()
-        status.update {
-            it.copy(lastEvent = EngineStatus.DialActivity(steps, action.id, System.currentTimeMillis()))
-        }
+        status.update { it.copy(lastEvent = EngineStatus.DialActivity(steps, action.id)) }
         val values = ActionSettingsValues(action.settings, config.actionValues[action.id].orEmpty())
         try {
             action.perform(steps, contextFactory(values))
@@ -134,14 +123,23 @@ class DialEngine @Inject constructor(
         }
     }
 
-    private data class Resolution(val action: DialAction?, val block: EngineStatus.Block?)
+    private companion object {
+        const val TAG = "DialEngine"
+    }
+}
 
-    private fun resolve(
+/** Pure decision of whether, and by which action, the dial is captured. */
+internal object CaptureRules {
+
+    data class Result(val action: DialAction?, val block: EngineStatus.Block?)
+
+    fun resolve(
         config: DialConfig,
         packageName: String?,
         headsets: List<String>,
         screen: ScreenStateMonitor.State,
-    ): Resolution {
+        actionFor: (String) -> DialAction?,
+    ): Result {
         val block = when {
             !config.enabled -> EngineStatus.Block.DISABLED
             !screen.interactive -> EngineStatus.Block.SCREEN_OFF
@@ -150,14 +148,9 @@ class DialEngine @Inject constructor(
                 EngineStatus.Block.NO_HEADSET
             else -> null
         }
-        if (block != null) return Resolution(null, block)
-        val action = registry[config.actionIdFor(packageName)]?.takeIf { it.interceptsDial }
-            ?: return Resolution(null, EngineStatus.Block.APP_USES_VOLUME)
-        return Resolution(action, null)
-    }
-
-    private companion object {
-        const val TAG = "DialEngine"
-        const val TEST_DELAY_MS = 3_000L
+        if (block != null) return Result(action = null, block = block)
+        val action = actionFor(config.actionIdFor(packageName))?.takeIf { it.interceptsDial }
+            ?: return Result(action = null, block = EngineStatus.Block.APP_PASSES_THROUGH)
+        return Result(action = action, block = null)
     }
 }

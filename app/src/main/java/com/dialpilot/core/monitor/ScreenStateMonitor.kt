@@ -18,8 +18,8 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
- * Whether the screen is on and unlocked. While it is not, the dial is left as a volume control,
- * so turning it with the phone in a pocket behaves normally.
+ * Whether the screen is on and unlocked. While it is not, the dial is left alone,
+ * so using it with the phone in a pocket behaves normally.
  */
 class ScreenStateMonitor @Inject constructor(
     @ApplicationContext private val context: Context,

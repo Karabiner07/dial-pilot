@@ -16,6 +16,11 @@ import javax.inject.Inject
 class HeadsetMonitor @Inject constructor(
     private val audioManager: AudioManager,
 ) {
+    private val bluetoothTypes = buildSet {
+        add(AudioDeviceInfo.TYPE_BLUETOOTH_A2DP)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) add(AudioDeviceInfo.TYPE_BLE_HEADSET)
+    }
+
     val connectedHeadsets: Flow<List<String>> = callbackFlow {
         fun publish() {
             val names = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
@@ -33,11 +38,6 @@ class HeadsetMonitor @Inject constructor(
         publish()
         awaitClose { audioManager.unregisterAudioDeviceCallback(callback) }
     }.distinctUntilChanged()
-
-    private val bluetoothTypes = buildSet {
-        add(AudioDeviceInfo.TYPE_BLUETOOTH_A2DP)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) add(AudioDeviceInfo.TYPE_BLE_HEADSET)
-    }
 
     companion object {
         fun matches(names: List<String>, filter: String): Boolean =

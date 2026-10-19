@@ -177,7 +177,6 @@ private fun StatusCard(state: MainUiState, viewModel: MainViewModel) {
     val engine = state.engine
     val activeAction = viewModel.action(engine.activeActionId)
     val headline = when {
-        !state.config.enabled -> stringResource(R.string.status_paused)
         !engine.serviceRunning -> stringResource(R.string.status_waiting_service)
         activeAction != null -> stringResource(R.string.status_capturing, stringResource(activeAction.titleRes))
         else -> when (engine.block) {
@@ -185,7 +184,7 @@ private fun StatusCard(state: MainUiState, viewModel: MainViewModel) {
             EngineStatus.Block.SCREEN_OFF -> stringResource(R.string.block_screen_off)
             EngineStatus.Block.LOCKED -> stringResource(R.string.block_locked)
             EngineStatus.Block.NO_HEADSET -> stringResource(R.string.block_no_headset, state.config.headsetNameFilter)
-            EngineStatus.Block.APP_USES_VOLUME -> stringResource(R.string.block_app_uses_volume)
+            EngineStatus.Block.APP_PASSES_THROUGH -> stringResource(R.string.block_app_passes_through)
             null -> stringResource(R.string.status_passthrough)
         }
     }
@@ -209,26 +208,6 @@ private fun StatusCard(state: MainUiState, viewModel: MainViewModel) {
             engine.lastEvent?.let { event ->
                 val title = viewModel.action(event.actionId)?.let { stringResource(it.titleRes) } ?: event.actionId
                 StatusLine(stringResource(R.string.status_last_event, event.steps, title))
-            }
-            if (engine.listeningForPresses) {
-                StatusLine(stringResource(R.string.status_presses_diag, engine.pressEvents, engine.lastPressKey ?: "–"))
-            }
-            if (engine.musicMaxVolume > 0) {
-                StatusLine(stringResource(R.string.status_volume_diag, engine.musicVolume, engine.musicMaxVolume, engine.volumeEvents))
-                Text(
-                    stringResource(R.string.status_volume_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedButton(onClick = viewModel::testScroll) { Text(stringResource(R.string.test_scroll)) }
-                Text(
-                    stringResource(R.string.test_scroll_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.weight(1f),
-                )
             }
         }
     }
@@ -301,11 +280,19 @@ private fun GeneralSettings(state: MainUiState, viewModel: MainViewModel) {
             onCheckedChange = viewModel::setCaptureDialPresses,
         )
         SwitchRow(
-            title = stringResource(R.string.setting_phone_keys),
-            description = stringResource(R.string.setting_phone_keys_desc),
-            checked = config.phoneKeysAsDial,
-            onCheckedChange = viewModel::setPhoneKeysAsDial,
+            title = stringResource(R.string.setting_use_rotation),
+            description = stringResource(R.string.setting_use_rotation_desc),
+            checked = config.useDialRotation,
+            onCheckedChange = viewModel::setUseDialRotation,
         )
+        if (config.useDialRotation) {
+            SwitchRow(
+                title = stringResource(R.string.setting_phone_keys),
+                description = stringResource(R.string.setting_phone_keys_desc),
+                checked = config.phoneKeysAsDial,
+                onCheckedChange = viewModel::setPhoneKeysAsDial,
+            )
+        }
         SwitchRow(
             title = stringResource(R.string.setting_require_headset),
             description = stringResource(R.string.setting_require_headset_desc),

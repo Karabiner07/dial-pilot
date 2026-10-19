@@ -33,13 +33,14 @@ class MainViewModel @Inject constructor(
     private val settings: SettingsRepository,
     private val installedApps: InstalledApps,
     registry: ActionRegistry,
-    private val engineStatus: EngineStatus,
+    engineStatus: EngineStatus,
 ) : AndroidViewModel(application) {
 
     val actions: List<DialAction> = registry.all
     private val actionsById = actions.associateBy { it.id }
 
     private val serviceEnabled = MutableStateFlow(false)
+    /** Only touched from the combine below, which runs on the main dispatcher. */
     private val labelCache = mutableMapOf<String, String>()
 
     val uiState: StateFlow<MainUiState> = combine(
@@ -72,8 +73,6 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch { _apps.value = installedApps.launchable() }
     }
 
-    fun testScroll() = engineStatus.requestTest()
-
     fun setEnabled(value: Boolean) = launch { settings.setEnabled(value) }
     fun setDefaultAction(id: String) = launch { settings.setDefaultAction(id) }
     fun setAppRule(packageName: String, actionId: String) = launch { settings.setAppRule(packageName, actionId) }
@@ -82,6 +81,7 @@ class MainViewModel @Inject constructor(
     fun setPhoneKeysAsDial(value: Boolean) = launch { settings.setPhoneKeysAsDial(value) }
     fun setHapticFeedback(value: Boolean) = launch { settings.setHapticFeedback(value) }
     fun setCaptureDialPresses(value: Boolean) = launch { settings.setCaptureDialPresses(value) }
+    fun setUseDialRotation(value: Boolean) = launch { settings.setUseDialRotation(value) }
     fun setRequireHeadset(value: Boolean) = launch { settings.setRequireHeadset(value) }
     fun setHeadsetNameFilter(value: String) = launch { settings.setHeadsetNameFilter(value) }
     fun setActionValue(actionId: String, key: String, value: Any) =

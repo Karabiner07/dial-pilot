@@ -10,6 +10,7 @@ import android.view.WindowManager
 import android.view.accessibility.AccessibilityNodeInfo
 import com.dialpilot.core.action.ActionContext
 import com.dialpilot.core.action.ActionSettingsValues
+import com.dialpilot.core.action.recycleCompat
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
@@ -48,17 +49,26 @@ internal class ServiceActionContext(
         val bounds = Rect()
         val queue = ArrayDeque<AccessibilityNodeInfo>().apply { add(root) }
         var visited = 0
-        while (queue.isNotEmpty() && visited++ < MAX_NODES) {
+        while (queue.isNotEmpty()) {
             val node = queue.removeFirst()
-            if (node.isScrollable && node.isVisibleToUser) {
-                node.getBoundsInScreen(bounds)
-                val area = bounds.width() * bounds.height()
-                if (area > bestArea) {
-                    best = node
-                    bestArea = area
-                }
+            if (visited++ >= MAX_NODES) {
+                node.recycleCompat()
+                continue
             }
             for (i in 0 until node.childCount) node.getChild(i)?.let(queue::add)
+            val area = if (node.isScrollable && node.isVisibleToUser) {
+                node.getBoundsInScreen(bounds)
+                bounds.width() * bounds.height()
+            } else {
+                0
+            }
+            if (area > bestArea) {
+                best?.recycleCompat()
+                best = node
+                bestArea = area
+            } else {
+                node.recycleCompat()
+            }
         }
         return best
     }

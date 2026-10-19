@@ -26,13 +26,14 @@ class ActionRegistry @Inject constructor(actions: Set<@JvmSuppressWildcards Dial
             ActionIds.SCROLL_HORIZONTAL,
             ActionIds.ZOOM,
             ActionIds.MEDIA_TRACKS,
-            ActionIds.VOLUME,
+            ActionIds.PASS_THROUGH,
         )
     }
 }
 
 object ActionIds {
-    const val VOLUME = "volume"
+    /** Persisted as "volume" from when this action was named after the dial's default. */
+    const val PASS_THROUGH = "volume"
     const val SCROLL_VERTICAL = "scroll_vertical"
     const val SCROLL_HORIZONTAL = "scroll_horizontal"
     const val SWIPE_ITEMS = "swipe_items"

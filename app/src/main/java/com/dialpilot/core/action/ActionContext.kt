@@ -26,7 +26,10 @@ interface ActionContext {
      */
     suspend fun dispatchGestureSequence(gestures: List<GestureDescription>): Boolean
 
-    /** The largest visible scrollable view in the active window, if any. */
+    /**
+     * The largest visible scrollable view in the active window, if any. The caller owns the
+     * returned node and should call [recycleCompat] when done.
+     */
     fun findPrimaryScrollable(): AccessibilityNodeInfo?
 
     /** Sends a media key (e.g. KEYCODE_MEDIA_NEXT) to the active media session. */

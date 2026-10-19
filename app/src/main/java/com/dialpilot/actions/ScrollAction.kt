@@ -15,7 +15,7 @@ import javax.inject.Inject
 abstract class ScrollAction(private val vertical: Boolean) : DialAction {
 
     override val settings = listOf(
-        ActionSetting.Slider(KEY_DISTANCE, R.string.setting_scroll_distance, 5..60, default = 18, unit = "%"),
+        ActionSetting.Slider(KEY_DISTANCE, R.string.setting_scroll_distance, 5..100, default = 50, step = 5, unit = "%"),
         ActionSetting.Slider(KEY_SPEED, R.string.setting_scroll_duration, 60..600, default = 220, step = 20, unit = " ms"),
         ActionSetting.Toggle(KEY_PRECISE, R.string.setting_scroll_precise, default = true),
     )

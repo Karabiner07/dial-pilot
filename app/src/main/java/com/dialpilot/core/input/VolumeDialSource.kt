@@ -8,21 +8,22 @@ import android.media.AudioManager
 import android.os.SystemClock
 import android.view.KeyEvent
 import androidx.core.content.ContextCompat
-import com.dialpilot.core.engine.EngineStatus
 import com.dialpilot.core.settings.DialConfig
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
 /**
- * Reads the Smart Dial through the media volume.
+ * Reads Smart Dial *rotation* through the media volume. Opt-in ([DialConfig.useDialRotation]).
  *
- * The CMF Buds Pro 2 dial is configured in the Nothing X app to control volume. Turning it makes
- * the buds report a new volume over Bluetooth (AVRCP), which Android applies to STREAM_MUSIC.
- * There is no public API that exposes the dial itself, so this source:
- *  1. pins the music volume at an "anchor" level while armed (never at 0 or max, so both
- *     directions stay detectable),
+ * With the dial set to Volume in Nothing X, buds that support Bluetooth absolute volume report
+ * each click to the phone, which applies it to STREAM_MUSIC. Many phones never receive these
+ * reports (the buds change their own volume instead); there this source sees nothing.
+ *
+ * While armed it:
+ *  1. pins the music volume at an "anchor" level, never at 0 or max, so both directions are
+ *     detectable,
  *  2. treats every change away from the anchor as dial steps, and
- *  3. immediately restores the anchor, so the listening volume does not drift.
+ *  3. restores the anchor immediately, so the listening volume does not drift.
  *
  * Changes caused by the phone's own volume keys are recognised through [onKeyEvent] and either
  * become steps too ([DialConfig.phoneKeysAsDial]) or are accepted as a new anchor.
@@ -30,47 +31,35 @@ import javax.inject.Inject
 class VolumeDialSource @Inject constructor(
     @ApplicationContext private val context: Context,
     private val audioManager: AudioManager,
-    private val status: EngineStatus,
 ) : DialInputSource {
 
     private var sink: ((Int) -> Unit)? = null
     private var anchor = NOT_ARMED
     private var phoneKeysAsDial = false
     private var phoneKeyGraceUntil = 0L
+    private var registered = false
 
     private val receiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.getIntExtra(EXTRA_STREAM_TYPE, -1) != AudioManager.STREAM_MUSIC) return
-            val volume = intent.getIntExtra(EXTRA_STREAM_VALUE, -1)
-            reportVolume(volume, counted = true)
-            onMusicVolumeChanged(volume)
+            onMusicVolumeChanged(intent.getIntExtra(EXTRA_STREAM_VALUE, -1))
         }
     }
 
     override fun start(sink: (steps: Int) -> Unit) {
         this.sink = sink
-        // VOLUME_CHANGED_ACTION is a system broadcast that has no public constant. It must be
-        // exported to be delivered; only the system can send it.
-        ContextCompat.registerReceiver(
-            context,
-            receiver,
-            IntentFilter(ACTION_VOLUME_CHANGED),
-            ContextCompat.RECEIVER_EXPORTED,
-        )
-        reportVolume(currentVolume(), counted = false)
     }
 
     override fun stop() {
+        disarm()
         sink = null
-        anchor = NOT_ARMED
-        runCatching { context.unregisterReceiver(receiver) }
     }
 
     override fun setArmed(armed: Boolean, config: DialConfig) {
         phoneKeysAsDial = config.phoneKeysAsDial
         when {
-            !armed -> anchor = NOT_ARMED
-            anchor == NOT_ARMED -> anchor = pinAnchor(currentVolume())
+            !armed || !config.useDialRotation -> disarm()
+            anchor == NOT_ARMED -> arm()
         }
     }
 
@@ -80,13 +69,37 @@ class VolumeDialSource @Inject constructor(
             KeyEvent.KEYCODE_VOLUME_DOWN -> -1
             else -> return false
         }
-        if (anchor != NOT_ARMED && phoneKeysAsDial) {
+        if (anchor == NOT_ARMED) return false
+        if (phoneKeysAsDial) {
             if (event.action == KeyEvent.ACTION_DOWN) sink?.invoke(direction)
             return true
         }
         // Let the key change the volume normally, and remember not to read it as a dial turn.
         phoneKeyGraceUntil = SystemClock.uptimeMillis() + PHONE_KEY_GRACE_MS
         return false
+    }
+
+    private fun arm() {
+        if (!registered) {
+            // VOLUME_CHANGED_ACTION is a system broadcast without a public constant. It must be
+            // registered as exported to be delivered; only the system can send it.
+            ContextCompat.registerReceiver(
+                context,
+                receiver,
+                IntentFilter(ACTION_VOLUME_CHANGED),
+                ContextCompat.RECEIVER_EXPORTED,
+            )
+            registered = true
+        }
+        anchor = pinAnchor(audioManager.getStreamVolume(AudioManager.STREAM_MUSIC))
+    }
+
+    private fun disarm() {
+        anchor = NOT_ARMED
+        if (registered) {
+            context.unregisterReceiver(receiver)
+            registered = false
+        }
     }
 
     private fun onMusicVolumeChanged(volume: Int) {
@@ -108,19 +121,6 @@ class VolumeDialSource @Inject constructor(
         if (pinned != volume) audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, pinned, 0)
         return pinned
     }
-
-    private fun reportVolume(volume: Int, counted: Boolean) {
-        val max = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-        status.update {
-            it.copy(
-                volumeEvents = if (counted) it.volumeEvents + 1 else it.volumeEvents,
-                musicVolume = volume,
-                musicMaxVolume = max,
-            )
-        }
-    }
-
-    private fun currentVolume() = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
 
     private companion object {
         const val NOT_ARMED = -1

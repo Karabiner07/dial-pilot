@@ -6,6 +6,7 @@ import com.dialpilot.R
 import com.dialpilot.core.action.ActionContext
 import com.dialpilot.core.action.ActionIds
 import com.dialpilot.core.action.DialAction
+import com.dialpilot.core.action.recycleCompat
 import javax.inject.Inject
 import kotlin.math.abs
 
@@ -21,11 +22,15 @@ class PageScrollAction @Inject constructor() : DialAction {
 
     override suspend fun perform(steps: Int, context: ActionContext) {
         val node = context.findPrimaryScrollable() ?: return
-        val forward = steps > 0
-        val action = preferredAction(forward).takeIf { it in node.actionList }
-            ?: if (forward) AccessibilityAction.ACTION_SCROLL_FORWARD else AccessibilityAction.ACTION_SCROLL_BACKWARD
-        repeat(abs(steps)) {
-            if (!node.performAction(action.id)) return
+        try {
+            val forward = steps > 0
+            val action = preferredAction(forward).takeIf { it in node.actionList }
+                ?: if (forward) AccessibilityAction.ACTION_SCROLL_FORWARD else AccessibilityAction.ACTION_SCROLL_BACKWARD
+            repeat(abs(steps)) {
+                if (!node.performAction(action.id)) return
+            }
+        } finally {
+            node.recycleCompat()
         }
     }
 
